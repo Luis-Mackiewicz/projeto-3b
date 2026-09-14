@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-/**
- * Conexão PDO segura com MariaDB
- */
+
 function conectar_bd(): PDO {
     $host = getenv('DB_HOST') ?: '127.0.0.1';
     $porta = getenv('DB_PORT') ?: '3313';
@@ -32,9 +30,7 @@ function conectar_bd(): PDO {
     }
 }
 
-/**
- * Resposta JSON padronizada
- */
+
 function responder_json(mixed $dados, int $status = 200): never {
     http_response_code($status);
     header('Content-Type: application/json; charset=UTF-8');
@@ -42,9 +38,7 @@ function responder_json(mixed $dados, int $status = 200): never {
     exit;
 }
 
-/**
- * Cabeçalhos comuns de CORS
- */
+
 function configurar_cors(): void {
     header('Access-Control-Allow-Origin: *');
     header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -56,9 +50,7 @@ function configurar_cors(): void {
     }
 }
 
-/**
- * Lê o corpo JSON da requisição de forma segura
- */
+
 function ler_corpo_json(): array {
     $conteudo = file_get_contents('php://input');
 
