@@ -1,10 +1,95 @@
 import { URL_USUARIOS } from '../config.js';
 import { abrirModal, fecharModal } from '../componentes/modais.js';
-import { requisicaoJson, criarRegistro, atualizarRegistro } from '../utils/requisicoes.js';
+import { requisicaoJson, atualizarRegistro } from '../utils/requisicoes.js';
 import { elementoPorId, elementoDeFormulario, textoDoInput, exibirAlerta, exibirLinhaVazia } from '../utils/dom.js';
+import {
+    definirErroCampo,
+    definirErroGeral,
+    focarPrimeiroErro,
+    limparErros,
+    validarRegras,
+    type RegraCampo,
+} from '../componentes/validacao.js';
 import type { Usuario, PerfilUsuario } from '../types.js';
 
 let cacheUsuarios: Usuario[] = [];
+
+interface RespostaUsuario {
+    success?: boolean;
+    message?: string;
+    campos?: Record<string, string>;
+}
+
+interface ResultadoCriacaoUsuario {
+    ok: boolean;
+    message?: string;
+    campos?: Record<string, string>;
+}
+
+const REGEX_EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+const REGRAS_USUARIO: RegraCampo[] = [
+    {
+        id: 'usuarioNome',
+        erroId: 'usuarioNomeErro',
+        validar: (valor) => (valor === '' ? 'Informe o nome.' : null),
+    },
+    {
+        id: 'usuarioEmail',
+        erroId: 'usuarioEmailErro',
+        validar: (valor) => {
+            if (valor === '') {
+                return 'Informe o e-mail.';
+            }
+            return REGEX_EMAIL.test(valor) ? null : 'Informe um e-mail válido.';
+        },
+    },
+    {
+        id: 'usuarioSenha',
+        erroId: 'usuarioSenhaErro',
+        validar: (valor) => {
+            if (valor === '') {
+                return 'Informe uma senha.';
+            }
+            return valor.length < 6 ? 'A senha deve ter no mínimo 6 caracteres.' : null;
+        },
+    },
+];
+
+const CAMPOS_SERVIDOR_USUARIO = [
+    { campo: 'nome', input: 'usuarioNome', erro: 'usuarioNomeErro' },
+    { campo: 'email', input: 'usuarioEmail', erro: 'usuarioEmailErro' },
+    { campo: 'senha', input: 'usuarioSenha', erro: 'usuarioSenhaErro' },
+];
+
+async function enviarCriacaoUsuario(dados: unknown): Promise<ResultadoCriacaoUsuario> {
+    try {
+        const resposta = await fetch(URL_USUARIOS, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados),
+        });
+
+        let corpo: RespostaUsuario;
+        try {
+            corpo = (await resposta.json()) as RespostaUsuario;
+        } catch (erro) {
+            return { ok: false, message: 'O servidor retornou uma resposta inválida.' };
+        }
+
+        if (!resposta.ok || corpo.success !== true) {
+            return {
+                ok: false,
+                message: corpo.message ?? 'Não foi possível cadastrar o usuário.',
+                campos: corpo.campos,
+            };
+        }
+
+        return { ok: true, message: corpo.message };
+    } catch (erro) {
+        return { ok: false, message: 'Não foi possível conectar ao servidor.' };
+    }
+}
 
 function obterUsuarioAtualId(): number {
     return Number(document.body.dataset.usuarioId ?? 0);
@@ -67,6 +152,8 @@ export function abrirModalUsuario(): void {
     if (formulario !== null) {
         formulario.reset();
     }
+    limparErros(REGRAS_USUARIO);
+    definirErroGeral('usuarioErroGeral', null);
     abrirModal('modalUsuario');
 }
 
@@ -76,24 +163,69 @@ export function configurarFormularioUsuario(): void {
         return;
     }
 
+    let jaSubmeteu = false;
+
     formulario.addEventListener('submit', async (evento) => {
         evento.preventDefault();
+        jaSubmeteu = true;
 
-        const dados = {
+        limparErros(REGRAS_USUARIO);
+        definirErroGeral('usuarioErroGeral', null);
+
+        if (!validarRegras(REGRAS_USUARIO)) {
+            focarPrimeiroErro(formulario);
+            return;
+        }
+
+        const resultado = await enviarCriacaoUsuario({
             nome: textoDoInput('usuarioNome'),
             email: textoDoInput('usuarioEmail'),
             senha: textoDoInput('usuarioSenha'),
             perfil: textoDoInput('usuarioPerfil'),
-        };
+        });
 
-        try {
-            await criarRegistro(URL_USUARIOS, dados);
-            exibirAlerta('Usuário cadastrado com sucesso.', 'success');
+        if (resultado.ok) {
+            exibirAlerta(resultado.message ?? 'Usuário cadastrado com sucesso.', 'success');
             fecharModal('modalUsuario');
             await renderizarUsuarios();
-        } catch (erro) {
-            void erro;
+            return;
         }
+
+        const campos = resultado.campos;
+
+        if (campos !== undefined) {
+            CAMPOS_SERVIDOR_USUARIO.forEach(({ campo, input, erro }) => {
+                const mensagem = campos[campo];
+                if (mensagem !== undefined) {
+                    definirErroCampo(input, erro, mensagem);
+                }
+            });
+            definirErroGeral('usuarioErroGeral', null);
+        } else {
+            definirErroGeral('usuarioErroGeral', resultado.message ?? 'Não foi possível cadastrar o usuário.');
+        }
+
+        focarPrimeiroErro(formulario);
+    });
+
+    REGRAS_USUARIO.forEach((regra) => {
+        const input = elementoPorId<HTMLInputElement>(regra.id);
+        if (input === null) {
+            return;
+        }
+
+        input.addEventListener('input', () => {
+            if (!jaSubmeteu) {
+                return;
+            }
+
+            const mensagem = regra.validar(input.value.trim());
+            definirErroCampo(regra.id, regra.erroId, mensagem);
+
+            if (mensagem === null) {
+                definirErroGeral('usuarioErroGeral', null);
+            }
+        });
     });
 }
 

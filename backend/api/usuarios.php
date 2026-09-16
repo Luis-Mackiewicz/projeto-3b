@@ -38,23 +38,39 @@ try {
             $dados = ler_corpo_json();
 
             if (trim((string)($dados['nome'] ?? '')) === '') {
-                responder_json(['success' => false, 'message' => 'Informe o nome.'], 422);
+                responder_json([
+                    'success' => false,
+                    'message' => 'Informe o nome.',
+                    'campos'  => ['nome' => 'Informe o nome.'],
+                ], 422);
             }
 
             $email = strtolower(trim((string)($dados['email'] ?? '')));
 
             if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-                responder_json(['success' => false, 'message' => 'Informe um e-mail válido.'], 422);
+                responder_json([
+                    'success' => false,
+                    'message' => 'Informe um e-mail válido.',
+                    'campos'  => ['email' => 'Informe um e-mail válido.'],
+                ], 422);
             }
 
             if (mb_strlen((string)($dados['senha'] ?? '')) < 6) {
-                responder_json(['success' => false, 'message' => 'A senha deve ter no mínimo 6 caracteres.'], 422);
+                responder_json([
+                    'success' => false,
+                    'message' => 'A senha deve ter no mínimo 6 caracteres.',
+                    'campos'  => ['senha' => 'A senha deve ter no mínimo 6 caracteres.'],
+                ], 422);
             }
 
             $perfil = (string)($dados['perfil'] ?? 'usuario');
 
             if (!in_array($perfil, ['admin', 'usuario'], true)) {
-                responder_json(['success' => false, 'message' => 'Perfil inválido.'], 422);
+                responder_json([
+                    'success' => false,
+                    'message' => 'Perfil inválido.',
+                    'campos'  => ['perfil' => 'Perfil inválido.'],
+                ], 422);
             }
 
             $stmt = $pdo->prepare('SELECT id FROM usuarios WHERE email = :email');
@@ -64,6 +80,7 @@ try {
                 responder_json([
                     'success' => false,
                     'message' => 'Já existe um usuário com este e-mail.',
+                    'campos'  => ['email' => 'Já existe um usuário com este e-mail.'],
                 ], 409);
             }
 
@@ -166,6 +183,7 @@ try {
         responder_json([
             'success' => false,
             'message' => 'Já existe um usuário com este e-mail.',
+            'campos'  => ['email' => 'Já existe um usuário com este e-mail.'],
         ], 409);
     }
 
