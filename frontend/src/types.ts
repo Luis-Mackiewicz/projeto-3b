@@ -2,6 +2,24 @@ export type TipoRegistro = 'receita' | 'despesa';
 
 export type TipoConta = 'corrente' | 'poupanca' | 'credito';
 
+export type PerfilUsuario = 'admin' | 'usuario';
+
+export interface Usuario {
+    id: number;
+    nome: string;
+    email: string;
+    perfil: PerfilUsuario;
+    ativo: boolean;
+    criado_em: string;
+}
+
+export interface SessaoUsuario {
+    id: number;
+    nome: string;
+    email: string;
+    perfil: PerfilUsuario;
+}
+
 export interface Categoria {
     id: number;
     nome: string;
