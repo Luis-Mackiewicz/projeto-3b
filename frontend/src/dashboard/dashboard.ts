@@ -223,13 +223,18 @@ function renderizarTabelaDashboard(transacoes: Transacao[]): void {
     }
 }
 
+function definirMetricaMoeda(id: string, idSub: string, valor: number, mensagemVazia: string): void {
+    noElemento(id, (el) => { el.textContent = formatarMoeda(valor); });
+    noElemento(idSub, (el) => { el.textContent = valor === 0 ? mensagemVazia : ''; });
+}
+
 function renderizarMetricasDashboard(
     totais: DashboardTotais,
     despesasMesAtual: number,
     ranking: CategoriaRanking[]
 ): void {
-    noElemento('metricaReceitas', (el) => { el.textContent = formatarMoeda(totais.total_receitas); });
-    noElemento('metricaDespesas', (el) => { el.textContent = formatarMoeda(totais.total_despesas); });
+    definirMetricaMoeda('metricaReceitas', 'metricaReceitasSub', totais.total_receitas, 'Nenhuma receita registrada.');
+    definirMetricaMoeda('metricaDespesas', 'metricaDespesasSub', totais.total_despesas, 'Nenhuma despesa registrada.');
     noElemento('metricaTotalTransacoes', (el) => { el.textContent = String(totais.total_transacoes); });
     noElemento('metricaDespesasMesAtual', (el) => { el.textContent = String(despesasMesAtual); });
 
@@ -240,6 +245,9 @@ function renderizarMetricasDashboard(
         elementoSaldo.classList.toggle('text-success', positivo);
         elementoSaldo.classList.toggle('text-danger', !positivo);
     }
+    noElemento('metricaSaldoSub', (el) => {
+        el.textContent = totais.total_transacoes === 0 ? 'Sem movimentações no período.' : '';
+    });
 
     renderizarRankingTransacoes(ranking);
 }

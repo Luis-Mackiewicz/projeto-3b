@@ -42,35 +42,41 @@
 
         <!-- Cards de métricas -->
         <div class="row g-3 mb-4">
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="card metric-card">
+            <div class="col-12 col-sm-6 col-xl-4">
+                <div class="card metric-card h-100">
                     <div class="card-body">
                         <p class="metric-label">Total de Receitas</p>
-                        <p class="metric-value text-success">Carregando...</p>
-                        <span class="metric-icon bg-success-subtle text-success"><i class="bi bi-arrow-trending-up"></i></span>
+                        <p id="metricaReceitas" class="metric-value text-success">Carregando...</p>
+                        <span id="metricaReceitasSub" class="metric-subvalue"></span>
+                        <span class="metric-icon bg-success-subtle text-success"><i class="bi bi-graph-up-arrow"></i></span>
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="card metric-card">
+            <div class="col-12 col-sm-6 col-xl-4">
+                <div class="card metric-card h-100">
                     <div class="card-body">
                         <p class="metric-label">Total de Despesas</p>
-                        <p class="metric-value text-danger">Carregando...</p>
-                        <span class="metric-icon bg-danger-subtle text-danger"><i class="bi bi-arrow-trending-down"></i></span>
+                        <p id="metricaDespesas" class="metric-value text-danger">Carregando...</p>
+                        <span id="metricaDespesasSub" class="metric-subvalue"></span>
+                        <span class="metric-icon bg-danger-subtle text-danger"><i class="bi bi-graph-down-arrow"></i></span>
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="card metric-card">
+            <div class="col-12 col-sm-6 col-xl-4">
+                <div class="card metric-card h-100">
                     <div class="card-body">
                         <p class="metric-label">Saldo Líquido</p>
                         <p id="metricaSaldo" class="metric-value">Carregando...</p>
+                        <span id="metricaSaldoSub" class="metric-subvalue"></span>
                         <span class="metric-icon bg-teal-soft text-teal"><i class="bi bi-wallet2"></i></span>
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="card metric-card">
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-sm-6 col-xl-4">
+                <div class="card metric-card h-100">
                     <div class="card-body">
                         <p class="metric-label">Maior Gasto (Categoria)</p>
                         <p id="metricaMaiorCategoria" class="metric-value">Carregando...</p>
@@ -79,11 +85,8 @@
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div class="row g-3 mb-4">
-            <div class="col-12 col-md-6 col-xl-4">
-                <div class="card metric-card">
+            <div class="col-12 col-sm-6 col-xl-4">
+                <div class="card metric-card h-100">
                     <div class="card-body d-flex justify-content-between align-items-center">
                         <div>
                             <p class="metric-label mb-1">Total de Transações</p>
@@ -93,8 +96,8 @@
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-md-6 col-xl-4">
-                <div class="card metric-card">
+            <div class="col-12 col-sm-6 col-xl-4">
+                <div class="card metric-card h-100">
                     <div class="card-body d-flex justify-content-between align-items-center">
                         <div>
                             <p class="metric-label mb-1">Despesas no Mês Atual</p>
@@ -132,7 +135,6 @@
                 <div class="card">
                     <div class="card-header app-card-header d-flex justify-content-between align-items-center">
                         <h6 class="mb-0 fw-semibold">Transações Recentes</h6>
-                        <span class="badge text-bg-light border">Filtradas e paginadas via Stored Procedure</span>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">

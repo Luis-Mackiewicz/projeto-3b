@@ -141,6 +141,17 @@ h6,
     box-shadow 0.16s ease;
 }
 
+.metric-card .card-body {
+  height: 100%;
+  padding: 0;
+}
+
+.metric-card .card-body:not(.d-flex) {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
 .metric-card:hover {
   transform: translateY(-3px);
   box-shadow: var(--shadow-lg);
