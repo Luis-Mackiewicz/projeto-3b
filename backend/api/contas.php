@@ -6,6 +6,8 @@ require_once __DIR__ . '/../config.php';
 
 configurar_cors();
 
+$usuario = exigir_login();
+
 $pdo = conectar_bd();
 $metodo = $_SERVER['REQUEST_METHOD'];
 
@@ -14,10 +16,10 @@ try {
         case 'GET':
             $sql = 'SELECT id, nome, tipo, saldo, ativo, criado_em
                     FROM contas
-                    WHERE ativo = TRUE
+                    WHERE ativo = TRUE AND usuario_id = :usuario
                     ORDER BY nome ASC';
             $stmt = $pdo->prepare($sql);
-            $stmt->execute();
+            $stmt->execute([':usuario' => $usuario['id']]);
             $contas = array_map(static function (array $conta): array {
                 $conta['saldo'] = (float)$conta['saldo'];
                 $conta['ativo'] = (bool)$conta['ativo'];
@@ -38,10 +40,11 @@ try {
                 responder_json(['success' => false, 'message' => 'O tipo deve ser "corrente", "poupanca" ou "credito".'], 422);
             }
 
-            $sql = 'INSERT INTO contas (nome, tipo, saldo)
-                    VALUES (:nome, :tipo, :saldo)';
+            $sql = 'INSERT INTO contas (usuario_id, nome, tipo, saldo)
+                    VALUES (:usuario, :nome, :tipo, :saldo)';
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
+                ':usuario' => $usuario['id'],
                 ':nome'  => trim($dados['nome']),
                 ':tipo'  => $tipo,
                 ':saldo' => (float)($dados['saldo'] ?? 0),
@@ -62,9 +65,9 @@ try {
 
             $dados = ler_corpo_json();
 
-            $sql = 'SELECT id FROM contas WHERE id = :id AND ativo = TRUE';
+            $sql = 'SELECT id FROM contas WHERE id = :id AND ativo = TRUE AND usuario_id = :usuario';
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([':id' => $id]);
+            $stmt->execute([':id' => $id, ':usuario' => $usuario['id']]);
 
             if ($stmt->fetch() === false) {
                 responder_json(['success' => false, 'message' => 'Conta não encontrada.'], 404);
@@ -72,13 +75,14 @@ try {
 
             $sql = 'UPDATE contas
                     SET nome = :nome, tipo = :tipo, saldo = :saldo
-                    WHERE id = :id';
+                    WHERE id = :id AND usuario_id = :usuario';
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
-                ':nome'  => trim((string)($dados['nome'] ?? '')),
-                ':tipo'  => (string)($dados['tipo'] ?? 'corrente'),
-                ':saldo' => (float)($dados['saldo'] ?? 0),
-                ':id'    => $id,
+                ':nome'    => trim((string)($dados['nome'] ?? '')),
+                ':tipo'    => (string)($dados['tipo'] ?? 'corrente'),
+                ':saldo'   => (float)($dados['saldo'] ?? 0),
+                ':id'      => $id,
+                ':usuario' => $usuario['id'],
             ]);
 
             responder_json(['success' => true, 'message' => 'Conta atualizada com sucesso.']);
@@ -90,9 +94,9 @@ try {
                 responder_json(['success' => false, 'message' => 'Informe o id da conta.'], 400);
             }
 
-            $sql = 'SELECT COUNT(*) AS total FROM transacoes WHERE conta_id = :id';
+            $sql = 'SELECT COUNT(*) AS total FROM transacoes WHERE conta_id = :id AND usuario_id = :usuario';
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([':id' => $id]);
+            $stmt->execute([':id' => $id, ':usuario' => $usuario['id']]);
             $uso = (int)$stmt->fetch()['total'];
 
             if ($uso > 0) {
@@ -102,9 +106,9 @@ try {
                 ], 409);
             }
 
-            $sql = 'DELETE FROM contas WHERE id = :id';
+            $sql = 'DELETE FROM contas WHERE id = :id AND usuario_id = :usuario';
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([':id' => $id]);
+            $stmt->execute([':id' => $id, ':usuario' => $usuario['id']]);
 
             if ($stmt->rowCount() === 0) {
                 responder_json(['success' => false, 'message' => 'Conta não encontrada.'], 404);

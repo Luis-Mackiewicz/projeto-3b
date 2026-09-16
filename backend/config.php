@@ -51,6 +51,72 @@ function configurar_cors(): void {
 }
 
 
+function iniciar_sessao(): void {
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        return;
+    }
+
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path'     => '/',
+        'secure'   => false,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+    session_name('projeto3b_sessao');
+    session_start();
+}
+
+
+function usuario_logado(): ?array {
+    iniciar_sessao();
+
+    $id = $_SESSION['usuario_id'] ?? null;
+    $nome = $_SESSION['usuario_nome'] ?? null;
+    $email = $_SESSION['usuario_email'] ?? null;
+    $perfil = $_SESSION['usuario_perfil'] ?? null;
+
+    if ($id === null || $nome === null || $email === null || $perfil === null) {
+        return null;
+    }
+
+    return [
+        'id'     => (int)$id,
+        'nome'   => (string)$nome,
+        'email'  => (string)$email,
+        'perfil' => (string)$perfil,
+    ];
+}
+
+
+function exigir_login(): array {
+    $usuario = usuario_logado();
+
+    if ($usuario === null) {
+        responder_json([
+            'success' => false,
+            'message' => 'Não autenticado. Faça login para continuar.',
+        ], 401);
+    }
+
+    return $usuario;
+}
+
+
+function exigir_admin(): array {
+    $usuario = exigir_login();
+
+    if ($usuario['perfil'] !== 'admin') {
+        responder_json([
+            'success' => false,
+            'message' => 'Acesso restrito ao administrador.',
+        ], 403);
+    }
+
+    return $usuario;
+}
+
+
 function ler_corpo_json(): array {
     $conteudo = file_get_contents('php://input');
 

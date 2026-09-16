@@ -6,6 +6,8 @@ require_once __DIR__ . '/../config.php';
 
 configurar_cors();
 
+$usuario = exigir_login();
+
 const TABELA = 'categorias';
 
 $pdo = conectar_bd();
@@ -16,10 +18,10 @@ try {
         case 'GET':
             $sql = 'SELECT id, nome, descricao, tipo, ativo, criado_em
                     FROM categorias
-                    WHERE ativo = TRUE
+                    WHERE ativo = TRUE AND usuario_id = :usuario
                     ORDER BY nome ASC';
             $stmt = $pdo->prepare($sql);
-            $stmt->execute();
+            $stmt->execute([':usuario' => $usuario['id']]);
             $categorias = array_map(static function (array $categoria): array {
                 $categoria['ativo'] = (bool)$categoria['ativo'];
                 return $categoria;
@@ -39,10 +41,11 @@ try {
                 responder_json(['success' => false, 'message' => 'O tipo deve ser "receita" ou "despesa".'], 422);
             }
 
-            $sql = 'INSERT INTO categorias (nome, descricao, tipo)
-                    VALUES (:nome, :descricao, :tipo)';
+            $sql = 'INSERT INTO categorias (usuario_id, nome, descricao, tipo)
+                    VALUES (:usuario, :nome, :descricao, :tipo)';
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
+                ':usuario'   => $usuario['id'],
                 ':nome'      => trim($dados['nome']),
                 ':descricao' => trim((string)($dados['descricao'] ?? '')),
                 ':tipo'      => $tipo,
@@ -63,9 +66,9 @@ try {
 
             $dados = ler_corpo_json();
 
-            $sql = 'SELECT id FROM categorias WHERE id = :id AND ativo = TRUE';
+            $sql = 'SELECT id FROM categorias WHERE id = :id AND ativo = TRUE AND usuario_id = :usuario';
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([':id' => $id]);
+            $stmt->execute([':id' => $id, ':usuario' => $usuario['id']]);
 
             if ($stmt->fetch() === false) {
                 responder_json(['success' => false, 'message' => 'Categoria não encontrada.'], 404);
@@ -73,13 +76,14 @@ try {
 
             $sql = 'UPDATE categorias
                     SET nome = :nome, descricao = :descricao, tipo = :tipo
-                    WHERE id = :id';
+                    WHERE id = :id AND usuario_id = :usuario';
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
                 ':nome'      => trim((string)($dados['nome'] ?? '')),
                 ':descricao' => trim((string)($dados['descricao'] ?? '')),
                 ':tipo'      => (string)($dados['tipo'] ?? 'despesa'),
                 ':id'        => $id,
+                ':usuario'   => $usuario['id'],
             ]);
 
             responder_json(['success' => true, 'message' => 'Categoria atualizada com sucesso.']);
@@ -91,9 +95,9 @@ try {
                 responder_json(['success' => false, 'message' => 'Informe o id da categoria.'], 400);
             }
 
-            $sql = 'SELECT COUNT(*) AS total FROM transacoes WHERE categoria_id = :id';
+            $sql = 'SELECT COUNT(*) AS total FROM transacoes WHERE categoria_id = :id AND usuario_id = :usuario';
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([':id' => $id]);
+            $stmt->execute([':id' => $id, ':usuario' => $usuario['id']]);
             $uso = (int)$stmt->fetch()['total'];
 
             if ($uso > 0) {
@@ -103,9 +107,9 @@ try {
                 ], 409);
             }
 
-            $sql = 'DELETE FROM categorias WHERE id = :id';
+            $sql = 'DELETE FROM categorias WHERE id = :id AND usuario_id = :usuario';
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([':id' => $id]);
+            $stmt->execute([':id' => $id, ':usuario' => $usuario['id']]);
 
             if ($stmt->rowCount() === 0) {
                 responder_json(['success' => false, 'message' => 'Categoria não encontrada.'], 404);

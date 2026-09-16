@@ -6,6 +6,8 @@ require_once __DIR__ . '/../config.php';
 
 configurar_cors();
 
+$usuario = exigir_login();
+
 $pdo = conectar_bd();
 
 try {
@@ -24,7 +26,8 @@ try {
         ? (int)$_GET['offset']
         : 0;
 
-    $stmt = $pdo->prepare('CALL sp_dashboard(:data_inicio, :data_fim, :categoria, :conta, :limite, :offset)');
+    $stmt = $pdo->prepare('CALL sp_dashboard(:usuario, :data_inicio, :data_fim, :categoria, :conta, :limite, :offset)');
+    $stmt->bindValue(':usuario', $usuario['id'], PDO::PARAM_INT);
     $stmt->bindValue(':data_inicio', $data_inicio, $data_inicio === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
     $stmt->bindValue(':data_fim', $data_fim, $data_fim === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
     $stmt->bindValue(':categoria', $categoria, $categoria === null ? PDO::PARAM_NULL : PDO::PARAM_INT);

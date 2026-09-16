@@ -6,10 +6,12 @@ require_once __DIR__ . '/../config.php';
 
 configurar_cors();
 
+$usuario = exigir_login();
+
 $pdo = conectar_bd();
 $metodo = $_SERVER['REQUEST_METHOD'];
 
-function validar_transacao(PDO $pdo, array $dados): array {
+function validar_transacao(PDO $pdo, array $dados, int $usuarioId): array {
     $erros = [];
 
     if (trim((string)($dados['descricao'] ?? '')) === '') {
@@ -45,15 +47,15 @@ function validar_transacao(PDO $pdo, array $dados): array {
     $conta = (int)$dados['conta_id'];
     $categoria = (int)$dados['categoria_id'];
 
-    $stmt = $pdo->prepare('SELECT id FROM contas WHERE id = :id AND ativo = TRUE');
-    $stmt->execute([':id' => $conta]);
+    $stmt = $pdo->prepare('SELECT id FROM contas WHERE id = :id AND ativo = TRUE AND usuario_id = :usuario');
+    $stmt->execute([':id' => $conta, ':usuario' => $usuarioId]);
 
     if ($stmt->fetch() === false) {
         $erros[] = 'A conta informada não existe.';
     }
 
-    $stmt = $pdo->prepare('SELECT id FROM categorias WHERE id = :id AND ativo = TRUE');
-    $stmt->execute([':id' => $categoria]);
+    $stmt = $pdo->prepare('SELECT id FROM categorias WHERE id = :id AND ativo = TRUE AND usuario_id = :usuario');
+    $stmt->execute([':id' => $categoria, ':usuario' => $usuarioId]);
 
     if ($stmt->fetch() === false) {
         $erros[] = 'A categoria informada não existe.';
@@ -74,7 +76,9 @@ try {
                     FROM transacoes t
                     INNER JOIN categorias c ON c.id = t.categoria_id
                     INNER JOIN contas co ON co.id = t.conta_id
-                    WHERE t.ativo = TRUE';
+                    WHERE t.ativo = TRUE AND t.usuario_id = :usuario';
+
+            $parametros = [':usuario' => $usuario['id']];
 
             if (!empty($_GET['categoria_id']) && is_numeric($_GET['categoria_id'])) {
                 $filtros[] = 't.categoria_id = :categoria';
@@ -112,16 +116,17 @@ try {
 
         case 'POST':
             $dados = ler_corpo_json();
-            $erros = validar_transacao($pdo, $dados);
+            $erros = validar_transacao($pdo, $dados, $usuario['id']);
 
             if ($erros) {
                 responder_json(['success' => false, 'message' => implode(' ', $erros)], 422);
             }
 
-            $sql = 'INSERT INTO transacoes (conta_id, categoria_id, descricao, valor, tipo, data_transacao)
-                    VALUES (:conta_id, :categoria_id, :descricao, :valor, :tipo, :data_transacao)';
+            $sql = 'INSERT INTO transacoes (usuario_id, conta_id, categoria_id, descricao, valor, tipo, data_transacao)
+                    VALUES (:usuario_id, :conta_id, :categoria_id, :descricao, :valor, :tipo, :data_transacao)';
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
+                ':usuario_id'    => $usuario['id'],
                 ':conta_id'      => (int)$dados['conta_id'],
                 ':categoria_id'  => (int)$dados['categoria_id'],
                 ':descricao'     => trim($dados['descricao']),
@@ -144,15 +149,15 @@ try {
             }
 
             $dados = ler_corpo_json();
-            $erros = validar_transacao($pdo, $dados);
+            $erros = validar_transacao($pdo, $dados, $usuario['id']);
 
             if ($erros) {
                 responder_json(['success' => false, 'message' => implode(' ', $erros)], 422);
             }
 
-            $sql = 'SELECT id FROM transacoes WHERE id = :id AND ativo = TRUE';
+            $sql = 'SELECT id FROM transacoes WHERE id = :id AND ativo = TRUE AND usuario_id = :usuario';
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([':id' => $id]);
+            $stmt->execute([':id' => $id, ':usuario' => $usuario['id']]);
 
             if ($stmt->fetch() === false) {
                 responder_json(['success' => false, 'message' => 'Transação não encontrada.'], 404);
@@ -165,7 +170,7 @@ try {
                         valor = :valor,
                         tipo = :tipo,
                         data_transacao = :data_transacao
-                    WHERE id = :id';
+                    WHERE id = :id AND usuario_id = :usuario';
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
                 ':conta_id'      => (int)$dados['conta_id'],
@@ -175,6 +180,7 @@ try {
                 ':tipo'          => $dados['tipo'],
                 ':data_transacao'=> $dados['data_transacao'],
                 ':id'            => $id,
+                ':usuario'       => $usuario['id'],
             ]);
 
             responder_json(['success' => true, 'message' => 'Transação atualizada com sucesso.']);
@@ -186,9 +192,9 @@ try {
                 responder_json(['success' => false, 'message' => 'Informe o id da transação.'], 400);
             }
 
-            $sql = 'DELETE FROM transacoes WHERE id = :id';
+            $sql = 'DELETE FROM transacoes WHERE id = :id AND usuario_id = :usuario';
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([':id' => $id]);
+            $stmt->execute([':id' => $id, ':usuario' => $usuario['id']]);
 
             if ($stmt->rowCount() === 0) {
                 responder_json(['success' => false, 'message' => 'Transação não encontrada.'], 404);

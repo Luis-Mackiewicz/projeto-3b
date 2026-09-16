@@ -8,28 +8,50 @@ USE projeto_3b;
 
 
 
+CREATE TABLE IF NOT EXISTS usuarios (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nome VARCHAR(100) NOT NULL,
+  email VARCHAR(150) NOT NULL,
+  senha_hash VARCHAR(255) NOT NULL,
+  perfil ENUM('admin', 'usuario') NOT NULL DEFAULT 'usuario',
+  ativo TINYINT(1) NOT NULL DEFAULT 1,
+  criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_usuarios_email (email)
+) ENGINE=InnoDB;
+
+
+
 CREATE TABLE IF NOT EXISTS categorias (
   id INT AUTO_INCREMENT PRIMARY KEY,
+  usuario_id INT NULL,
   nome VARCHAR(100) NOT NULL,
   descricao TEXT NULL,
   tipo ENUM('receita', 'despesa') NOT NULL DEFAULT 'despesa',
   ativo TINYINT(1) NOT NULL DEFAULT 1,
   criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uk_categorias_nome (nome)
+  UNIQUE KEY uk_categorias_usuario_nome (usuario_id, nome),
+  CONSTRAINT fk_categorias_usuario FOREIGN KEY (usuario_id)
+    REFERENCES usuarios (id) ON UPDATE CASCADE,
+  INDEX idx_categorias_usuario (usuario_id)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS contas (
   id INT AUTO_INCREMENT PRIMARY KEY,
+  usuario_id INT NULL,
   nome VARCHAR(100) NOT NULL,
   tipo ENUM('corrente', 'poupanca', 'credito') NOT NULL DEFAULT 'corrente',
   saldo DECIMAL(12,2) NOT NULL DEFAULT 0.00,
   ativo TINYINT(1) NOT NULL DEFAULT 1,
   criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uk_contas_nome (nome)
+  UNIQUE KEY uk_contas_usuario_nome (usuario_id, nome),
+  CONSTRAINT fk_contas_usuario FOREIGN KEY (usuario_id)
+    REFERENCES usuarios (id) ON UPDATE CASCADE,
+  INDEX idx_contas_usuario (usuario_id)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS transacoes (
   id INT AUTO_INCREMENT PRIMARY KEY,
+  usuario_id INT NULL,
   conta_id INT NOT NULL,
   categoria_id INT NOT NULL,
   descricao VARCHAR(150) NOT NULL,
@@ -43,9 +65,12 @@ CREATE TABLE IF NOT EXISTS transacoes (
     REFERENCES contas (id) ON UPDATE CASCADE,
   CONSTRAINT fk_transacao_categoria FOREIGN KEY (categoria_id)
     REFERENCES categorias (id) ON UPDATE CASCADE,
+  CONSTRAINT fk_transacoes_usuario FOREIGN KEY (usuario_id)
+    REFERENCES usuarios (id) ON UPDATE CASCADE,
   INDEX idx_transacoes_data (data_transacao),
   INDEX idx_transacoes_categoria (categoria_id),
-  INDEX idx_transacoes_conta (conta_id)
+  INDEX idx_transacoes_conta (conta_id),
+  INDEX idx_transacoes_usuario (usuario_id)
 ) ENGINE=InnoDB;
 
 
@@ -150,6 +175,7 @@ INNER JOIN contas co ON co.id = t.conta_id$$
 DROP PROCEDURE IF EXISTS sp_dashboard$$
 
 CREATE PROCEDURE sp_dashboard(
+  IN p_usuario_id INT,
   IN p_data_inicio DATE,
   IN p_data_fim DATE,
   IN p_categoria_id INT,
@@ -174,6 +200,7 @@ BEGIN
     INNER JOIN categorias c ON c.id = t.categoria_id
     INNER JOIN contas co ON co.id = t.conta_id
     WHERE t.ativo = TRUE
+      AND t.usuario_id = ', p_usuario_id, '
       AND (@data_inicio IS NULL OR t.data_transacao >= @data_inicio)
       AND (@data_fim IS NULL OR t.data_transacao <= @data_fim)
       AND (@categoria_id IS NULL OR t.categoria_id = @categoria_id)
@@ -193,6 +220,7 @@ BEGIN
     COUNT(t.id) AS total_transacoes
   FROM transacoes t
   WHERE t.ativo = TRUE
+    AND t.usuario_id = p_usuario_id
     AND (p_data_inicio IS NULL OR t.data_transacao >= p_data_inicio)
     AND (p_data_fim IS NULL OR t.data_transacao <= p_data_fim)
     AND (p_categoria_id IS NULL OR t.categoria_id = p_categoria_id)
@@ -208,9 +236,11 @@ BEGIN
   LEFT JOIN transacoes t
         ON t.categoria_id = c.id
        AND t.ativo = TRUE
+       AND t.usuario_id = p_usuario_id
        AND (p_data_inicio IS NULL OR t.data_transacao >= p_data_inicio)
        AND (p_data_fim IS NULL OR t.data_transacao <= p_data_fim)
        AND (p_conta_id IS NULL OR t.conta_id = p_conta_id)
+  WHERE c.usuario_id = p_usuario_id
   GROUP BY c.id, c.nome
   HAVING total_despesas > 0 OR total_receitas > 0
   ORDER BY total_despesas DESC, total_receitas DESC;
