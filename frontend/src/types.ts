@@ -110,8 +110,7 @@ export interface FrequenciaCategoria {
 }
 
 export interface FiltrosDashboard {
-    dataInicio: string;
-    dataFim: string;
+    data: string;
     categoriaId: number;
     contaId: number;
 }

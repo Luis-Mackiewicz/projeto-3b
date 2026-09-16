@@ -17,12 +17,8 @@
                 <h6 class="card-subtitle text-muted mb-3 fw-semibold text-uppercase letter-spacing">Filtros</h6>
                 <div class="row g-3 align-items-end">
                     <div class="col-6 col-md-2">
-                        <label for="filtroDataInicio" class="form-label small">Data início</label>
-                        <input type="date" id="filtroDataInicio" class="form-control form-control-sm">
-                    </div>
-                    <div class="col-6 col-md-2">
-                        <label for="filtroDataFim" class="form-label small">Data fim</label>
-                        <input type="date" id="filtroDataFim" class="form-control form-control-sm">
+                        <label for="filtroData" class="form-label small">Data</label>
+                        <input type="date" id="filtroData" class="form-control form-control-sm">
                     </div>
                     <div class="col-6 col-md-3">
                         <label for="filtroCategoria" class="form-label small">Categoria</label>
@@ -32,7 +28,7 @@
                         <label for="filtroConta" class="form-label small">Conta</label>
                         <select id="filtroConta" class="form-select form-select-sm"></select>
                     </div>
-                    <div class="col-12 col-md-2 d-flex gap-2">
+                    <div class="col-12 col-md-4 d-flex gap-2">
                         <button type="button" id="aplicarFiltros" class="btn btn-primary btn-sm flex-fill">Filtrar</button>
                         <button type="button" id="limparFiltros" class="btn btn-outline-secondary btn-sm flex-fill">Limpar</button>
                     </div>

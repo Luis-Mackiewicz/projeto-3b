@@ -6,8 +6,7 @@ import type { Transacao, FiltrosDashboard, DashboardTotais, CategoriaRanking, Fr
 
 let offsetAtual = 0;
 let filtrosAtuais: FiltrosDashboard = {
-    dataInicio: '',
-    dataFim: '',
+    data: '',
     categoriaId: 0,
     contaId: 0,
 };
@@ -19,11 +18,8 @@ function construirURLDashboard(offset: number): string {
     parametros.set('limite', String(LIMITE_PAGINA));
     parametros.set('offset', String(offset));
 
-    if (filtrosAtuais.dataInicio !== '') {
-        parametros.set('data_inicio', filtrosAtuais.dataInicio);
-    }
-    if (filtrosAtuais.dataFim !== '') {
-        parametros.set('data_fim', filtrosAtuais.dataFim);
+    if (filtrosAtuais.data !== '') {
+        parametros.set('data', filtrosAtuais.data);
     }
     if (filtrosAtuais.categoriaId > 0) {
         parametros.set('categoria_id', String(filtrosAtuais.categoriaId));
@@ -282,8 +278,7 @@ export function configurarFiltrosDashboard(): void {
     if (botaoFiltrar !== null) {
         botaoFiltrar.addEventListener('click', () => {
             filtrosAtuais = {
-                dataInicio: textoDoInput('filtroDataInicio'),
-                dataFim: textoDoInput('filtroDataFim'),
+                data: textoDoInput('filtroData'),
                 categoriaId: numeroDoInput('filtroCategoria'),
                 contaId: numeroDoInput('filtroConta'),
             };
@@ -293,11 +288,10 @@ export function configurarFiltrosDashboard(): void {
 
     if (botaoLimpar !== null) {
         botaoLimpar.addEventListener('click', () => {
-            noElemento('filtroDataInicio', (el) => { (el as HTMLInputElement).value = ''; });
-            noElemento('filtroDataFim', (el) => { (el as HTMLInputElement).value = ''; });
+            noElemento('filtroData', (el) => { (el as HTMLInputElement).value = ''; });
             noElemento('filtroCategoria', (el) => { (el as HTMLSelectElement).value = ''; });
             noElemento('filtroConta', (el) => { (el as HTMLSelectElement).value = ''; });
-            filtrosAtuais = { dataInicio: '', dataFim: '', categoriaId: 0, contaId: 0 };
+            filtrosAtuais = { data: '', categoriaId: 0, contaId: 0 };
             carregarDashboard();
         });
     }

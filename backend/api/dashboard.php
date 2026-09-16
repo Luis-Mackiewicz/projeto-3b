@@ -11,8 +11,7 @@ $usuario = exigir_login();
 $pdo = conectar_bd();
 
 try {
-    $data_inicio = !empty($_GET['data_inicio']) ? $_GET['data_inicio'] : null;
-    $data_fim    = !empty($_GET['data_fim']) ? $_GET['data_fim'] : null;
+    $data        = !empty($_GET['data']) ? $_GET['data'] : null;
     $categoria   = isset($_GET['categoria_id']) && is_numeric($_GET['categoria_id'])
         ? (int)$_GET['categoria_id']
         : null;
@@ -28,8 +27,8 @@ try {
 
     $stmt = $pdo->prepare('CALL sp_dashboard(:usuario, :data_inicio, :data_fim, :categoria, :conta, :limite, :offset)');
     $stmt->bindValue(':usuario', $usuario['id'], PDO::PARAM_INT);
-    $stmt->bindValue(':data_inicio', $data_inicio, $data_inicio === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
-    $stmt->bindValue(':data_fim', $data_fim, $data_fim === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+    $stmt->bindValue(':data_inicio', $data, $data === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+    $stmt->bindValue(':data_fim', $data, $data === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
     $stmt->bindValue(':categoria', $categoria, $categoria === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
     $stmt->bindValue(':conta', $conta, $conta === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
     $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
